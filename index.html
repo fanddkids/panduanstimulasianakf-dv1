@@ -1214,13 +1214,32 @@
                 aiResponseContainer.textContent = "AI sedang berpikir... mohon tunggu sebentar.";
 
                 try {
-                    const apiUrl = '/ask'; 
-    
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ prompt: prompt }) 
-                    });
+    // Panggil "jembatan" kita yang ada di /functions/ask.js
+    // Browser akan otomatis tahu bahwa /ask merujuk ke fungsi tersebut setelah di-deploy
+    const apiUrl = '/ask'; 
+
+    const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // Kirim hanya prompt, karena sisanya sudah diatur di "jembatan"
+        body: JSON.stringify({ prompt: prompt }) 
+    });
+
+    if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    if (result.candidates && result.candidates.length > 0 &&
+        result.candidates[0].content && result.candidates[0].content.parts &&
+        result.candidates[0].content.parts.length > 0) {
+        const text = result.candidates[0].content.parts[0].text;
+        aiResponseContainer.innerHTML = text.replace(/\n/g, '<br>');
+    } else {
+         aiResponseContainer.textContent = "Maaf, AI tidak dapat memberikan jawaban saat ini. Coba lagi nanti.";
+    }
+} 
 
                     if (!response.ok) {
                         throw new Error(`API request failed with status ${response.status}`);
